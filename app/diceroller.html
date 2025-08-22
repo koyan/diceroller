@@ -100,7 +100,7 @@ let currentGameId = null;
 let currentPlayer = null;
 let refreshInterval = null;
 
-// Fetch and display current game state
+// Fetch and display current game state safely
 function refreshGameState() {
     if (!currentGameId) return;
 
@@ -109,16 +109,16 @@ function refreshGameState() {
         if(data.success){
             // Display players, mark creator
             let playersHtml = data.players.map((p, index) => {
-                if(p === data.creator) return `<strong>${p} (Creator)</strong>`;
+                if(index === 0) return `<strong>${p} (Creator)</strong>`;
                 return p;
             }).join(", ");
             $("#player-list").html(playersHtml);
 
-            // Show last roll
-            if(data.lastRequest){
-                let resultsDisplay = data.lastRequest.results.map(r => {
-                    if(r.extras.length){
-                        return `${r.total} (${r.base}+${r.extras.join('+')})`;
+            // Show last roll safely
+            if(data.lastRequest && data.lastRequest.results && data.lastRequest.results.length){
+                let resultsHtml = data.lastRequest.results.map(r => {
+                    if(r.exploded && r.exploded.length > 1){
+                        return `${r.total} (${r.exploded.join('+')})`;
                     } else {
                         return r.total;
                     }
@@ -126,8 +126,8 @@ function refreshGameState() {
 
                 $("#results").html(
                     `<h5>Latest Roll by ${data.lastRequest.player}:</h5>
-                    <p>${resultsDisplay}</p>
-                    <h6>Total: ${data.lastRequest.sum}</h6>`
+                     <p>${resultsHtml}</p>
+                     <h6>Total: ${data.lastRequest.sum}</h6>`
                 );
             } else {
                 $("#results").html("<p>No rolls yet.</p>");
@@ -166,14 +166,13 @@ $(document).ready(function(){
     }, function(data){
         if(data.success){
             currentGameId = data.gameId;
-            currentPlayer = creatorName; // creator is first player
+            currentPlayer = creatorName;
             $("#game-info").text("Game ID: " + currentGameId + " (Waiting for players...)");
             $("#game-setup").addClass("d-none");
             $("#dice-roller").removeClass("d-none");
             startAutoRefresh();
         } else {
-            const msg = data.message || "Error creating game.";
-            alert(msg);
+            alert(data.message || "Error creating game.");
         }
     }, "json").fail(function(xhr, status, error){
         console.error("AJAX failed:", status, error, xhr.responseText);
@@ -205,6 +204,8 @@ $(document).ready(function(){
   // Dice roller submit
   $("#dice-form").on("submit", function(e){
     e.preventDefault();
+    console.log("Rolling dice for", currentPlayer, "in game", currentGameId);
+
     $.post("api/roll_dice.php", { 
         numDice: $("#numDice").val(),
         numSides: $("#numSides").val(),
@@ -212,12 +213,17 @@ $(document).ready(function(){
         gameId: currentGameId,
         playerName: currentPlayer
     }, function(data){
+        console.log("Roll response:", data);
+
         if(data.success){
-            refreshGameState(); // refresh immediately after rolling
+            refreshGameState();
         } else {
-            $("#results").html(`<div class="alert alert-danger">Error rolling dice.</div>`);
+            $("#results").html(`<div class="alert alert-danger">${data.message || 'Error rolling dice.'}</div>`);
         }
-    }, "json");
+    }, "json").fail(function(xhr, status, error){
+        console.error("AJAX failed:", status, error, xhr.responseText);
+        $("#results").html(`<div class="alert alert-danger">AJAX error rolling dice.</div>`);
+    });
   });
 
   // Manual refresh button

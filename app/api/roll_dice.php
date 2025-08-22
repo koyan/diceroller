@@ -1,73 +1,44 @@
 <?php
 header('Content-Type: application/json');
-require_once __DIR__.'/helpers.php';
+require_once __DIR__ . '/helpers.php';
 
 $gameId = trim($_POST['gameId'] ?? '');
 $playerName = trim($_POST['playerName'] ?? '');
 $numDice = intval($_POST['numDice'] ?? 0);
-$numSides = intval($_POST['numSides'] ?? 0);
-$allowExplosion = isset($_POST['allowExplosion']) && ($_POST['allowExplosion'] == 1 || $_POST['allowExplosion'] === true);
+$numSides = intval($_POST['numSides'] ?? 6);
+$allowExplosion = isset($_POST['allowExplosion']) && $_POST['allowExplosion'] ? true : false;
 
-if(!$gameId || !$playerName || $numDice < 1 || $numSides < 2){
-    echo json_encode(["success"=>false,"message"=>"Invalid input"]);
+if (!$gameId || !$playerName || $numDice < 1 || $numSides < 2) {
+    echo json_encode(["success" => false, "message" => "Invalid input"]);
     exit;
 }
 
-$gameFile = GAMES_DIR."/$gameId.json";
-if(!file_exists($gameFile)){
-    echo json_encode(["success"=>false,"message"=>"Game not found"]);
+$game = load_game($gameId);
+if (!$game) {
+    echo json_encode(["success" => false, "message" => "Game not found"]);
     exit;
 }
 
-// Load game
-$game = json_decode(file_get_contents($gameFile), true);
-
-// Optional: check if player exists in game
-if(!in_array($playerName, $game['players'])){
-    echo json_encode(["success"=>false,"message"=>"Player not in game"]);
-    exit;
-}
-
-// Roll dice with optional explosion
+// Roll the dice
 $results = [];
-
-for ($i=0; $i<$numDice; $i++) {
-    $roll = rand(1, $numSides);
-    $extras = [];
-
-    if ($allowExplosion) {
-        while ($roll == $numSides) {
-            $extra = rand(1, $numSides);
-            $extras[] = $extra;
-            $roll += $extra;
-        }
-    }
-
-    $results[] = [
-        "base" => $roll - array_sum($extras),
-        "extras" => $extras,
-        "total" => $roll
-    ];
+$sum = 0;
+for ($i = 0; $i < $numDice; $i++) {
+    $r = roll_one_die($numSides, $allowExplosion);
+    $results[] = ['total' => $r['roll'], 'exploded' => $r['exploded']];
+    $sum += $r['roll'];
 }
 
-$sum = array_sum(array_map(fn($r) => $r['total'], $results));
-
+// Save last roll
 $game['lastRequest'] = [
-    "player" => $playerName,
-    "numDice" => $numDice,
-    "numSides" => $numSides,
-    "allowExplosion" => $allowExplosion,
-    "results" => $results,
-    "sum" => $sum
+    'player' => $playerName,
+    'numDice' => $numDice,
+    'numSides' => $numSides,
+    'allowExplosion' => $allowExplosion,
+    'results' => $results,
+    'sum' => $sum
 ];
 
-$game['lastUpdated'] = time();
-
-// Save back to JSON
 save_game($game);
 
-echo json_encode([
-    "success" => true,
-    "results" => $results,
-    "sum" => $sum
-]);
+echo json_encode(["success" => true, "results" => $results, "sum" => $sum]);
+?>

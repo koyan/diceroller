@@ -1,0 +1,16 @@
+# ---------------------------
+# Protect sensitive files
+# ---------------------------
+
+# Deny access to database and JSON files
+<FilesMatch "\.(db|sqlite|json)$">
+    Require all denied
+</FilesMatch>
+
+# Deny access to helper and setup PHP scripts
+<FilesMatch "^(helpers\.php|setup_db\.php|roll_dice\.php|get_game_state\.php|create_game\.php|join_game\.php)$">
+    Require all denied
+</FilesMatch>
+
+# Optional: prevent directory listing
+Options -Indexes
