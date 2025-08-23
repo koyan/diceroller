@@ -1,1 +1,4 @@
 api/games/*.json
+app/__pycache__/
+
+games/

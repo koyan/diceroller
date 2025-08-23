@@ -1,5 +1,5 @@
-bashweb:
-	docker-compose run --rm web /bin/sh
+bashflask:
+	docker-compose run --rm flask /bin/sh
 
-logsweb:
-	docker-compose logs -f --tail=200 web
+logsflask:
+	docker-compose logs -f --tail=200 flask
