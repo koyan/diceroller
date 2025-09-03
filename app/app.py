@@ -50,7 +50,7 @@ def handle_create_game(data):
         games[game_id] = {
             "gameId": game_id,
             "players": [],
-            "lastRequest": None
+            "requests": []
         }
     games[game_id]["players"].append(player)
     save_game(game_id)
@@ -90,7 +90,7 @@ def handle_roll_dice(data):
         "kept_indices": kept_indices
     }
 
-    games[game_id]["lastRequest"] = last_request
+    games[game_id]["requests"].append(last_request)
     save_game(game_id)
 
     emit("game_state", games[game_id], room=game_id)

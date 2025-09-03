@@ -30,7 +30,7 @@
             </div>            
             <div class="mb-3">
               <label for="gameId" class="form-label">Game ID</label>
-              <input type="text" class="form-control" id="gameId" name="gameId" maxlength="8" required>
+              <input type="text" class="form-control" id="gameId" name="gameId" maxlength="20" required>
             </div>
             <button type="submit" class="btn btn-success w-100">Create Game</button>
           </form>
@@ -104,27 +104,44 @@ $(document).ready(function(){
 
     // Display last roll
     function resultsDisplay(data){
-        if(!data.lastRequest || !data.lastRequest.results) {
+        if(!data.requests || data.requests.length == 0) {
             $("#results").html("<p>No rolls yet.</p>");
             return;
         }
+        $("#results").html("");
+        for (let i=0; i<11; i++) { 
+          if (i > data.requests.length-1) {
+            return;
+          }
+          console.log(i)
+          console.log(data.requests)
+          let lastRequest = data.requests[data.requests.length -i-1]
+          console.log(lastRequest)
+          let resultsHtml = lastRequest.results.map((r,i)=>{
+              let text = (r.exploded && Array.isArray(r.exploded) && r.exploded.length > 1)
+                        ? `${r.total} (${r.exploded.join('+')})`
+                        : `${r.total}`;
 
-        let resultsHtml = data.lastRequest.results.map((r,i)=>{
-            let text = (r.exploded && Array.isArray(r.exploded) && r.exploded.length > 1)
-                      ? `${r.total} (${r.exploded.join('+')})`
-                      : `${r.total}`;
+              if(lastRequest.kept_indices && lastRequest.kept_indices.includes(i)){
+                  text = `<strong>${text}</strong>`;
+              }
+              return text;
+          }).join(", ");
+          if (i === 0){
+            $("#results").append(
+                `<h5>Latest Roll by ${lastRequest.player}:</h5>
+                <p>${resultsHtml}</p>
+                <h6>Total: ${lastRequest.sum}</h6>`
+            );
+          } else {
+            $("#results").append(
+                `<hr/><h6>Roll by ${lastRequest.player}:</h6>
+                <p>${resultsHtml}</p>
+                <h6>Total: ${lastRequest.sum}</h6>`
+            );
+          }
 
-            if(data.lastRequest.kept_indices && data.lastRequest.kept_indices.includes(i)){
-                text = `<strong>${text}</strong>`;
-            }
-            return text;
-        }).join(", ");
-
-        $("#results").html(
-            `<h5>Latest Roll by ${data.lastRequest.player}:</h5>
-            <p>${resultsHtml}</p>
-            <h6>Total: ${data.lastRequest.sum}</h6>`
-        );
+      }
     }
 
     // Update game state
