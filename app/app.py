@@ -38,31 +38,20 @@ def roll_one_die(sides, allow_explosion=False):
 
 @socketio.on("create_game")
 def handle_create_game(data):
-    creator = data.get("creatorName")
-    num_players = int(data.get("numPlayers", 2))
-    game_id = "".join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=8))
-
-    games[game_id] = {
-        "gameId": game_id,
-        "players": [creator],
-        "numPlayers": num_players,
-        "lastRequest": None
-    }
-    save_game(game_id)
-    join_room(game_id)
-    emit("game_created", {"gameId": game_id, "creatorName": creator})
-    emit("game_state", games[game_id], room=game_id)
-
-@socketio.on("join_game")
-def handle_join_game(data):
-    game_id = data.get("gameId")
     player = data.get("playerName")
-    if game_id not in games:
+    game_id = data.get("gameId")
+    if not game_id:
+        game_id = "".join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=8))
+    elif game_id not in games:
         load_game(game_id)
-    if game_id not in games:
-        emit("error", {"message": "Game not found"})
-        return
 
+    # if the game doesnt exist in memory, lets add it. 
+    if game_id not in games:
+        games[game_id] = {
+            "gameId": game_id,
+            "players": [],
+            "lastRequest": None
+        }
     games[game_id]["players"].append(player)
     save_game(game_id)
     join_room(game_id)

@@ -22,34 +22,20 @@
           <h3 class="card-title text-center mb-4">🎮 Game Setup</h3>
 
           <!-- Create Game -->
-          <form id="create-game-form" class="mb-4">
-            <h5>Create New Game</h5>
+          <form id="create-join-game-form" class="mb-4">
+            <h5>Create or Join Game</h5>
             <div class="mb-3">
-              <label for="creatorName" class="form-label">Your Name</label>
-              <input type="text" class="form-control" id="creatorName" name="creatorName" required>
-            </div>
+              <label for="playerName" class="form-label">Your Name</label>
+              <input type="text" class="form-control" id="playerName" name="playerName" required>
+            </div>            
             <div class="mb-3">
-              <label for="numPlayers" class="form-label">Number of Players</label>
-              <input type="number" class="form-control" id="numPlayers" name="numPlayers" min="2" required>
+              <label for="gameId" class="form-label">Game ID</label>
+              <input type="text" class="form-control" id="gameId" name="gameId" maxlength="8" required>
             </div>
             <button type="submit" class="btn btn-success w-100">Create Game</button>
           </form>
 
           <hr>
-
-          <!-- Join Game -->
-          <form id="join-game-form">
-            <h5>Join Existing Game</h5>
-            <div class="mb-3">
-              <label for="playerName" class="form-label">Your Name</label>
-              <input type="text" class="form-control" id="playerName" name="playerName" required>
-            </div>
-            <div class="mb-3">
-              <label for="gameId" class="form-label">Game ID</label>
-              <input type="text" class="form-control" id="gameId" name="gameId" maxlength="8" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Join Game</button>
-          </form>
 
         </div>
       </div>
@@ -156,23 +142,13 @@ $(document).ready(function(){
     });
 
     // Create game
-    $("#create-game-form").on("submit", function(e){
-        e.preventDefault();
-        const creatorName = $("#creatorName").val();
-        const numPlayers = parseInt($("#numPlayers").val());
-
-        console.log("Create game clicked:", creatorName, numPlayers);
-        socket.emit("create_game", { creatorName, numPlayers });
-    });
-
-    // Join game
-    $("#join-game-form").on("submit", function(e){
+    $("#create-join-game-form").on("submit", function(e){
         e.preventDefault();
         const playerName = $("#playerName").val();
         const gameId = $("#gameId").val();
 
-        console.log("Join game clicked:", playerName, gameId);
-        socket.emit("join_game", { playerName, gameId });
+        console.log("Create game clicked:", playerName, gameId);
+        socket.emit("create_game", { playerName, gameId });
     });
 
     // Roll dice
@@ -195,15 +171,6 @@ $(document).ready(function(){
     });
 
     // Handle confirmations
-    socket.on("game_created", function(data){
-        console.log("Game created:", data);
-        currentGameId = data.gameId;
-        currentPlayer = data.creatorName;
-
-        $("#game-setup").addClass("d-none");
-        $("#dice-roller").removeClass("d-none");
-    });
-
     socket.on("game_joined", function(data){
         console.log("Game joined:", data);
         currentGameId = data.gameId;
